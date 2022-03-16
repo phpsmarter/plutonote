@@ -7,7 +7,7 @@ using InteractiveUtils
 # ╔═╡ 4ea09c13-a7ea-4d0d-98bc-90c9a8fdf28d
 begin
 using Plots, Images,DataFrames,CSV,PlotThemes
-plotly()
+gr()
 #theme(:orange)
 img = load(download("http://127.0.0.1:8080/halfcourt.png"))
 x = range(-250, 250, length=size(img,1))
