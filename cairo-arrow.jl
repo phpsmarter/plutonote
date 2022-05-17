@@ -13,8 +13,8 @@ end
 # ╔═╡ 30545e5c-c8f3-40e2-ba00-b225dce7cb4c
 let
 	ps = [Point3f(x, y, z) for x in -5:2:5 for y in -5:2:5 for z in -5:2:5]
-   ns = map(p -> 0.1 * Vec3f(p[2], p[3], p[1]), ps)
-   lengths = norm.(ns)
+    ns = map(p -> 0.1 * Vec3f(p[2], p[3], p[1]), ps)
+    lengths = norm.(ns)
    arrows(
     ps, ns, fxaa=true, # turn on anti-aliasing
     color=lengths,
