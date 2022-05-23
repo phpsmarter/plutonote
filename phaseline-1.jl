@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.0
+# v0.17.5
 
 using Markdown
 using InteractiveUtils
@@ -24,10 +24,37 @@ end
 # ╔═╡ 08eb7f9e-c3b7-11ec-1ebc-7d5bbfb92a59
 md"# phaseline function define"
 
+# ╔═╡ 94353433-434a-477e-8cc2-72af384a4520
+let
+	md""" $$𝑓(𝑥,𝑦)=𝑥2+2𝑦2$$ """
+    xs = LinRange(-3, 3, 20)
+    ys = LinRange(-3, 3, 20)
+    us = [0  for x in xs, y in ys]  # 梯度要求导数
+    vs = [4y  for x in xs, y in ys]
+    strength = vec(sqrt.(us .^2 .+ vs .^2))
+    cmap = :gnuplot
+    fig = Figure(resolution = (600, 400))
+    ax = Axis(fig[1,1], xlabel = "x", ylabel = "y", aspect = DataAspect())
+    arrows!(ax, xs, ys, us, vs, arrowsize = 10, lengthscale = 0.1,
+        arrowcolor = strength, linecolor = strength, colormap = cmap)
+    Colorbar(fig[1,2], limits =(minimum(strength), maximum(strength)),
+        nsteps =100, colormap = cmap, ticksize=15, width = 15, tickalign=1)
+    limits!(ax, -3,3,-3,3)
+    colsize!(fig.layout, 1, Aspect(1, 1.0))
+    # display(fig)
+	fig
+end
+
+
+
+# ╔═╡ e2c77f42-f4dd-464d-9682-d365de91f24d
+
+
 # ╔═╡ 5a3cf6ff-a269-480a-9df7-96eee23eaaa5
 begin
 range=-3:3
 @bind p Slider(range; default=0, show_value=true)
+
 end
 
 # ╔═╡ cb628a2d-431d-4d5a-9ddd-1cd9103ab760
@@ -1260,7 +1287,9 @@ version = "3.5.0+0"
 # ╔═╡ Cell order:
 # ╠═08eb7f9e-c3b7-11ec-1ebc-7d5bbfb92a59
 # ╠═8c64e0b6-e448-4219-97a5-1a76fb4df148
-# ╟─5a3cf6ff-a269-480a-9df7-96eee23eaaa5
+# ╠═94353433-434a-477e-8cc2-72af384a4520
+# ╟─e2c77f42-f4dd-464d-9682-d365de91f24d
+# ╠═5a3cf6ff-a269-480a-9df7-96eee23eaaa5
 # ╠═438fd7f5-058b-42c3-a435-7b9d6452cb22
 # ╠═22eaa646-adbd-43b8-a081-12dcf8ce1755
 # ╠═cb628a2d-431d-4d5a-9ddd-1cd9103ab760
