@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.17.5
+# v0.19.0
 
 using Markdown
 using InteractiveUtils
@@ -7,15 +7,12 @@ using InteractiveUtils
 # ╔═╡ 2d02a0c3-8f20-4b2a-adfe-a2f1fd0a556e
 begin
 	using CSV,Plots,DataFrames,HTTP
-	plotly()
+    gr()
 end
-
-# ╔═╡ 3ee452de-a5bd-11ec-2e8b-e3c4c292adae
-
 
 # ╔═╡ 87647790-9ef1-44de-9399-4e2006dbaf31
 begin
-  url="http://192.168.1.3:8080/finance-charts-apple.csv"
+  url="http://192.168.10.172:8080/finance-charts-apple.csv"
   df=CSV.read(HTTP.get(url).body,DataFrame)
 
 	
@@ -25,10 +22,10 @@ end
 # ╔═╡ 59ee9761-ee53-4410-9a3b-8a07e4782d2a
 begin
 	 dfc=copy(df)
-	 p1=plot(dfc.Date,dfc.AAPL_Close)
+	 p1=plot(dfc.Date,dfc.AAPL_Close,label="close")
 	 #p2=plot(dfc.Date,dfc.AAPL_Volume)
-	 p3=plot(dfc.Date,dfc.AAPL_High)
-	 p4=plot(dfc.Date,dfc.AAPL_Adjusted)
+	 p3=plot(dfc.Date,dfc.AAPL_High,label="high")
+	 p4=plot(dfc.Date,dfc.AAPL_Adjusted,label="adjust")
 	 plot(p1,p3,p4,layout=(3,1))
 
 end
@@ -616,9 +613,9 @@ uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
 [[deps.Qt5Base_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Fontconfig_jll", "Glib_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "OpenSSL_jll", "Pkg", "Xorg_libXext_jll", "Xorg_libxcb_jll", "Xorg_xcb_util_image_jll", "Xorg_xcb_util_keysyms_jll", "Xorg_xcb_util_renderutil_jll", "Xorg_xcb_util_wm_jll", "Zlib_jll", "xkbcommon_jll"]
-git-tree-sha1 = "ad368663a5e20dbb8d6dc2fddeefe4dae0781ae8"
+git-tree-sha1 = "c6c0f690d0cc7caddb74cef7aa847b824a16b256"
 uuid = "ea2cea3b-5b76-57ae-a6ef-0a8af62496e1"
-version = "5.15.3+0"
+version = "5.15.3+1"
 
 [[deps.REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
@@ -1000,7 +997,6 @@ version = "0.9.1+5"
 """
 
 # ╔═╡ Cell order:
-# ╠═3ee452de-a5bd-11ec-2e8b-e3c4c292adae
 # ╠═2d02a0c3-8f20-4b2a-adfe-a2f1fd0a556e
 # ╠═87647790-9ef1-44de-9399-4e2006dbaf31
 # ╠═59ee9761-ee53-4410-9a3b-8a07e4782d2a
