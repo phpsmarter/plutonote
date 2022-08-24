@@ -4,49 +4,281 @@
 using Markdown
 using InteractiveUtils
 
-# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
-macro bind(def, element)
-    quote
-        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
-        local el = $(esc(element))
-        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
-        el
-    end
+# ╔═╡ 78dc0306-22c7-11ed-1327-cdd85d272d50
+begin
+	using Latexify,PlutoUI,RDatasets,DataFrames,Random,FileIO,HTTP ,StatsPlots,Statistics,StatsBase,LaTeXStrings,Symbolics,CSV,Distributions
+	
+	using Plots:plot,bar
+    TableOfContents(title="统计分布介绍")
+	
 end
 
-# ╔═╡ c9a45914-1acf-11ed-09d9-83e0c55163bb
-begin
-using  Distributions,DataFrames,Statistics,Plots,RCall,StatsPlots,StatsBase,LaTeXStrings,CSV,HTTP,Symbolics,HypothesisTests,PlutoUI 
+# ╔═╡ c35042b4-0e86-4f4a-8879-471fc0e6ea94
+Random.seed!(123) 
 
+# ╔═╡ 733c9de7-f017-41bf-9ccf-96e6942a5f51
+md"""
+#  统计分布介绍
+"""
+
+# ╔═╡ a70b59e2-5467-4413-83c6-233526303da7
+md"""
+## 1. 伯努利分布
+
+伯努利分布(Bernoulli distribution)  实际是描述只有两种状态的随机变量的方法. 
+
+
+最常见的场景有足球比赛开始时抛硬币, 胜者可以挑选场地.  对于一个公平的硬币, 正反面的机会均等, 一些随机因素, 包括抛硬币时用的力, 高度等等造成结果的不确定性.只进行一次实验. 
+
+![](https://tva1.sinaimg.cn/orj360/e6c9d24egy1h5gugep58lj20go0m80tw.jpg)
+
+伯努利分布(Bernoulli distribution) 实际是二项式分布(Binomial distribution) 的一个特例, 当二项式分布实验次数为$1$时就是伯努利分布. 
+"""
+
+# ╔═╡ 8e8040d8-283b-41f0-8ab5-67b0bba7193f
+begin
+	success_rate=0.5
+	Bernoulli(success_rate)
 end
 
-# ╔═╡ 8cb71019-31f0-463c-a268-4e2cfeb913ba
+# ╔═╡ c402515c-96eb-46db-8d80-bb05b1f1b520
+md"""
+## 2. 二项式分布
+
+二项式分布(Binomial distribution)
+
+二项式分布与伯努利分布不同点在于,  二项式分布 分布进行多次实验
+
+二项式分布的规范为:
+
+!!! def
+
+	- 试验重复进行$n$ 次
+    - 每次试验只用两种可能, 一种定义为成功, 一种定义为失败
+    - 成功的概率表示为$p$
+    - 每次试验都是独立的, 互不影响
+	
+   
+"""
+
+# ╔═╡ 7033c5b9-0052-43bc-9c29-071907f3c275
 begin
-	@variables μ,σ,d
+    n,p=1000,0.5
+	d=Binomial(n,p)
+end
+
+# ╔═╡ 54ec07f9-2dcf-4deb-b10a-8978268fedbf
+md"""
+上图为n 取不同值的二项式分布的图. 以$Binnomial(4,p=0.5)$ 为例, 图中从左至右表示投出 $0,1,2,3,4,5$ 次正面的几率.  因为成功的几率为$p=0.5$, 所以期望最高为抛出两次正面. 因为每次抛硬币是独立, 并且随机的, 一次正面也没有的概率也存在. 
+
+要注意这是理论分布的, 分布的均值为$\frac{0+1+2+3+4+5}{5}=2$, 意思是如果我们把抛$4$次硬币作为一次抽样, 那么执行多次抽样形成的抽样分布是一个正态分布, 均值围绕在$2$ 周围. 这就是我们只执行一次实验, 抛四次硬币, 很大可能会是两次正面, 两次反面, 
+当然具体到每次实际操作, 不会完全一样, 有抽样误差. 
+"""
+
+# ╔═╡ d2164bb6-338e-499f-8b08-83d685298038
+let
+	data=[mean(rand(Binomial(4,0.5),10)) for i in 1:1000]
+	histogram(data,label=false)
+end
+
+# ╔═╡ 9e164acc-1a7c-4b01-a643-04fc4e952f26
+md"""
+### 二项式分布, 成功的概率并非只有$(p=0.5)$
+
+例如蓝球比赛投篮就符合二项式分布. 例如投 10 个球, 成功率 0.3
+"""
+
+# ╔═╡ a5670b20-1a99-4e7b-8e77-23a3b4b96a15
+throw=Binomial(10, 0.3)  # 投篮命中率为 0.3
+
+# ╔═╡ c8ff4bb6-89d1-4fdc-8649-245a256f7691
+begin
+	coin=Binomial(10,0.5)
+	res=["$(i)次正面的概率"=>pdf(coin, i)  for i in 1:10]
+end
+
+# ╔═╡ f6e45fb7-ac4e-4f26-8ec9-45e9d2f96d86
+   res.|>(x->x[2])|>sum   #概率密度累积为 1
+
+# ╔═╡ b950336e-d37d-4c12-9bb8-baba419531db
+md"""
+## 3. 泊松分布
+
+泊松分布的属性是:
+
+ - 试验成功的数量可以计算
+ - 一段特定时间段内事件成功的均数是已知的
+ - 每个结果是独立的
+ - 事件成功的概率和时间间隔成比例
+
+
+例如某医院一段时间内出生的婴儿数量平均为每小时 10 人, 这就符合泊松分布的要求, 知道一段时间内成功的均数,  母亲分娩都是独立时间,之间互不影响. 随着间隔时间延长, 出生率会增加
+"""
+
+# ╔═╡ 091d7304-fefe-4caa-b42f-39c86537b1c1
+begin
+	λ=4  #医院统计每小时出生婴儿 4 人
+	birth_possion=Poisson(λ)  # 建立泊松分布
+end
+
+# ╔═╡ de27541c-dde2-4dbe-a75c-c6987f100ba6
+pdf(birth_possion,4)    #每小时出生 4 人的概率
+
+# ╔═╡ 0b56d807-1966-4ad2-937a-5a665b1b9563
+cdf(birth_possion,10)   #出生数 0-10 人的累积概率接近1
+
+# ╔═╡ ff6ba76d-7fee-461f-83b9-0eb3b7b8bb1e
+md"""
+## 4.均一分布
+
+在均一分布中, 每个点发生的机会均等.  掷色子就是均一分布, 每个点数出现的机会一样. 
+
+实例  公交车到站间隔时间为20分钟,8分钟以内公交车会会到站的概率为多少?
+
+因为间隔时间为 $0-20$, 最幸运的是立刻就有车到站, 最不走运的时,到站是车刚好开走. 也就是公交车在$(0~20)$分钟时间间隔内随时会来, 每分钟到站的机会均等. 所以这是均一分布. 计算8分钟以内公交到站是累积$(0-8)$分钟的概率
+"""
+
+# ╔═╡ b802b7d4-c954-4273-bfb9-7483b939f068
+bustop=Uniform(0, 20)  #建立均值分布
+
+# ╔═╡ a88c8115-0ffa-4ce1-a502-b99e8d7391e5
+bus_at_prob=(0:20).|>t->pdf(bustop,t)  # 20分钟内,每分钟车到站机会均等
+
+# ╔═╡ 996e99f8-d8db-491d-814b-0146972df0d6
+md"""
+公交到站这个例子看似在谈时间, 其实和时间没有关系. 等一分钟和等 20 分钟的机会相等, 假设我们去公交站 1000 次, 两种等待时间的理论次数都是 50 次(1000X0.05) . 试验与频率有关与时间无关
+
+我们换一种观点, 假设有一个 20 面的色子, 累积掷出 1-8的概率为多少? 
+"""
+
+# ╔═╡ f7459ca6-89ec-4bcf-8bc9-70ef14de18ae
+less_than_8=cdf(bustop,8)  #等待 8 分钟车回来的概率是 0.4
+
+# ╔═╡ 5f53191e-079f-41b3-9e27-4c2179466ed4
+md"""
+## 5. 多项式分布
+ 多项式分布是对二项式分布的泛化, 
+
+ 成功的概率是一个概率向量, 标明了在一次实验中各项成功的概率. 
+
+ 例如一个罐子中共有 10 个球, 黄色球 6 个, 红色球 2 个, 粉色球 2 个. 当我们随机从中抽取一个球的时候, 概率为:$[0.6,0.2,0.2]$,  
+
+如果我们采用放回时抽样(因为总体中个体少,如果总体个数庞大可以不放回), 抽取 4 个球, 计算每种组合的概率, 就会组成一个 以 概率向量为成功率, 实验次数为 4的多项式抽样分布
+
+从这个抽样分布中连续抽取四个黄球的概率为多少呢?
+"""
+
+# ╔═╡ c59d4752-f5de-4dbe-b0a8-2bf16c3f3c97
+begin
+   struct Pv
+        Ye:: Float64
+        Re:: Float64
+        Pi:: Float64
+   end
+ pv=Pv(0.6,0.2,0.2)   # 黄, 红,粉球的概率向量
+ trial=Pv(4,0,0)      #  从布袋中取出4 个球,都是黄球的试验 
+ marble=Multinomial(4, [pv.Ye,pv.Re,pv.Pi]) #以概率向量执行4次试验的多项式分布
+ allyellow=pdf(marble,[trial.Ye,trial.Re,trial.Pi])
+ println("概率向量为 ",[0.6,0.2,0.4])
+ println("连续抽取4次黄球的概率为 ", allyellow)
+end
+
+# ╔═╡ 1002cc1d-ecea-4c47-ae3c-39bd3f10c4a5
+md"""
+## 6. 正态分布
+
+在统计学中使用最为广泛的是正态分布(normal distribution), 不仅仅是因为很多现实的总体的分布接近于正态分布. 更为重要的是无论总体分布如何, 针对总体抽样获取的均数分布均呈现正态分布. 这是正态分布对推断统计最重要的作用. 
+
+每一次抽样获取的均数都位于正态分布中, 并且大多数情况下抽取的均数都围绕在均数附近(抽取样本的均数分布在抽样分布均数的附近).   这就是抽样推断统计的理论依据. 
+
+对于统计中的正态分布, 要理解两个方面的内容, 一是正态分布自身的特性, 第二是抽样的均数是怎么形成正态分布的.  一旦明确了抽样均数分布的特性, 后续的一些推断统计难度就会下降, 因为很多的统计都是以抽样均数分布为基础展开讨论的. 
+
+
+!!! notice
+    样本抽样均数分布是为以总体均数为中心, 并不是以总体分布为中心. 在大多数的统计教程中, 样本数据是模拟从某个分布获取的, 但是实际上我们不需要考虑总体是什么分布.  我们唯一能得到的可能只是样本数据. 
+
+从逻辑上上, 为什么推断统计要声明零假设呢? 因为总体未知, 既然总体未知, 总体分布情况怎么会知道呢?
+
+
+有反反复复的理解这其中的关系
+"""
+
+# ╔═╡ b0b8f358-bea8-4170-92c3-8ee9428e0cdb
+md"""
+### 正态分布的性质
+
+ -  形成钟形曲线
+ -  左右对称
+ -  均数和中位数一样, 位于中心
+ -  $68\%$ 的曲线下面积集中在$\pm 1$ 个标准差区间内
+ -  $95\%$ 的曲线下面积集中在$\pm 2$ 个标准差区间内
+ -  $99.7\%$ 的曲线下面积集中在$\pm 3$ 个标准差区间内
+"""
+
+# ╔═╡ 7d9d33b6-0c58-429f-9028-79f1106ab264
+md"""
+在正态分布中, 位置和百分比比实际的分数更能反映出总体的信息. 个体分数转化为标准分以后就可以使用标准正态分布来处理位置和概率问题.  如下图
+
+- 在$\pm 1 \sigma$ 区间内集中了$68 \%$ 的数据
+- 在$\pm 2 \sigma$ 区间内集中了$95 \%$ 的数据
+- 在$\pm 3 \sigma$ 区间内集中了$99.7 \%$ 的数据
+
+落在三个标准差之外的数据可以认为是变异性非常大的数据 可以认为离散程度过大不能代表总体
+
+这就是 $68-95-99.7$ 规则. 为统计推断提供了一个定量的依据. 
+
+但是这个定量依据只是一个手段. 最终要能使用好这个规则,需要理以样本均数如何形成正态分布
+"""
+
+# ╔═╡ e821dd18-b7bf-4268-a80b-485be4471c93
+let
 	μ,σ=0,1
-    d=Normal(μ,σ)
-	range=-3σ:σ:3σ
-    n=length(range)
+	d=Normal(μ,σ)
+	range=-3σ:1:3σ
+	round1(x)=round(x,digits=1)
+	res=range.|>x->cdf(d,x)*100|>round1
+    diff= [n==0 ? res[1] : res[n+1]-res[n] for n in 0:length(res)-1]
+	
+	make_ann(str,x,y=0.08)=(x-0.3,y,
+    text(round1(str)|>x->L"%$(x) \%", pointsize=10, halign=:right, valign=:center))
+    ann= [make_ann(diff[n],range[n]) for n in 1:length(range)]
+	push!(ann, make_ann(0.1,3.8σ))
+    
+    plot(d,label=L"\mu=%$(μ),\sigma=%$(σ)",alpha=0.5,color=:blue,xticks=(-3:1:3),fill=(0,:lightblue))
+   plot!(repeat(range', 2), [zeros(1, length(range)); (range.|>σ->pdf(d,σ))'], label = "", color = :red, alpha = 0.3,lw=1) 
+   
+	snormal=plot!(ann=ann,xlabel=L"\sigma",ylabel=L"probablity")
 end
 
-# ╔═╡ 0bb41459-6e12-4cf1-bfda-99950c713c2d
-data=rand(d,1000)
+# ╔═╡ 7d50ab5c-06ec-4efd-bc52-6755d7c63df6
+md"""
+### 样本抽样数据如何形成抽样分布
 
-# ╔═╡ 92d67ca7-f02e-4e77-8a4c-9fe209b352b1
-@bind s Slider(range,default=0,show_value=true)
+当我们进行抽样试验时不管样本量多少,都是总体的一个缩影, 后续有偏差,但是大体反映了总体的一些特征. 如果反复的抽样, 每次抽样都是总体的一个特征反映, 但是样本并没有提供总体的所有信息, 会有偏差,但是大体上会形成对总体的一个特征集中的描述, 这个描述就以正态分布的形式出现. 
 
-# ╔═╡ 74a9fc93-88b5-4348-8959-2b3508755e29
-begin
- range2=-4:0.1:s   # 用户绘图细绿线, 间隔小
- val=[pdf(d,σ) for σ in range]
- cd=[pdf(d,i) for i in range2] 
- plot(d,label=false,alpha=0.5,color=:blue,xticks=(-3:1:3) )
- plot!(repeat(range', 2), [zeros(1, n); val'], label = "", color = :red, alpha = 0.3,lw=1)  
- plot!([s,s],[0, pdf(d,s)],label=false,color=:green, alpha=0.8,lw=2)
- plot!(repeat(range2', 2), [zeros(1, length(range2)); cd'], label =false, color = :gray, alpha = 0.3) 
- 
+以样本均数统计量为例, 反复抽样多次就可以看到大多数的样本都捕获了总体的信息. 大部分的抽样试验属于抽样分布,  从$68-95-99.7$ 规则可以知道,每次抽样都有极大的概率位于总体均数的两个标准差以内.
 
+计算时你可以不用考虑这个问题, 但是理解样本抽样分布形成机理以后, 统计学的学习就彻底明了
+"""
+
+
+# ╔═╡ db1acb8e-3ed9-44f2-bd12-1dbe351a5d30
+function binomial_pdf(n) 
+    bar(0:n, pdf.(Binomial(n), 0:n),
+		 ylim = (0, 1), yticks = 0:0.1:1,
+        label = L"Binomial(n=%$n, p=0.5)", legend = :topleft,xlabel=L"head")
+ end
+
+# ╔═╡ f43380fd-4f0b-42a3-b950-0dd29bd33a24
+plot(binomial_pdf.((1,2,4,10,20,40))...)
+
+# ╔═╡ ed845bf1-eea3-4b1b-b912-42f872ea8ac6
+function possion_cdf(dist,n)
+	bar(0:n,(1:n).|>n->cdf(dist,n), ylim = (0, 1), yticks = 0:0.1:1,xticks=0:10,ylabel=L"proablity",xlabel=L"birth",label=false)
 end
+
+# ╔═╡ b0b0f68f-29c1-438d-8ed2-968b2f9df864
+possion_cdf(birth_possion,10)  #累加的概率
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -54,12 +286,14 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-HypothesisTests = "09f84164-cd44-5f33-b23f-e6b0d136a0d5"
 LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
+Latexify = "23fbe1c1-3f47-55db-b15f-69d7ec21a316"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
-RCall = "6f49c342-dc21-5d91-9882-a32aef131414"
+RDatasets = "ce6b1742-4840-55fa-b093-852dadbb1d8b"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
@@ -68,13 +302,14 @@ Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
 [compat]
 CSV = "~0.10.4"
 DataFrames = "~1.3.4"
-Distributions = "~0.25.66"
+Distributions = "~0.25.67"
+FileIO = "~1.15.0"
 HTTP = "~1.2.1"
-HypothesisTests = "~0.10.10"
 LaTeXStrings = "~1.3.0"
-Plots = "~1.31.6"
+Latexify = "~0.15.16"
+Plots = "~1.31.7"
 PlutoUI = "~0.7.39"
-RCall = "~0.13.13"
+RDatasets = "~0.7.7"
 StatsBase = "~0.33.21"
 StatsPlots = "~0.15.1"
 Symbolics = "~4.10.4"
@@ -86,13 +321,13 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.8.0-rc3"
 manifest_format = "2.0"
-project_hash = "143d1a325b2dfffd57beec05b1b33678d7a89330"
+project_hash = "360ed42530b1157dfa9834450efbf993f633068f"
 
 [[deps.AbstractAlgebra]]
 deps = ["GroupsCore", "InteractiveUtils", "LinearAlgebra", "MacroTools", "Markdown", "Random", "RandomExtensions", "SparseArrays", "Test"]
-git-tree-sha1 = "774a46f9b06d1667a295e58e6e3cf0838f5dbb4d"
+git-tree-sha1 = "4a502c003026ecdcac4b100cfc1d14f63eccede7"
 uuid = "c3fe647b-3220-5bb0-a1ea-a7954cac585d"
-version = "0.27.2"
+version = "0.27.3"
 
 [[deps.AbstractFFTs]]
 deps = ["ChainRulesCore", "LinearAlgebra"]
@@ -310,12 +545,6 @@ git-tree-sha1 = "455419f7e328a1a2493cabc6428d79e951349769"
 uuid = "a33af91c-f02d-484b-be07-31d278c5ca2b"
 version = "0.1.1"
 
-[[deps.Conda]]
-deps = ["Downloads", "JSON", "VersionParsing"]
-git-tree-sha1 = "6e47d11ea2776bc5627421d59cdcc1296c058071"
-uuid = "8f4d0f93-b110-5947-807f-2305c1781a2d"
-version = "1.7.0"
-
 [[deps.ConstructionBase]]
 deps = ["LinearAlgebra"]
 git-tree-sha1 = "59d00b3139a9de4eb961057eabb65ac6522be954"
@@ -403,9 +632,9 @@ uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
 [[deps.Distributions]]
 deps = ["ChainRulesCore", "DensityInterface", "FillArrays", "LinearAlgebra", "PDMats", "Printf", "QuadGK", "Random", "SparseArrays", "SpecialFunctions", "Statistics", "StatsBase", "StatsFuns", "Test"]
-git-tree-sha1 = "aafa0665e3db0d3d0890cdc8191ea03dc279b042"
+git-tree-sha1 = "6180800cebb409d7eeef8b2a9a562107b9705be5"
 uuid = "31c24e10-a181-5473-b8eb-7969acd0382f"
-version = "0.25.66"
+version = "0.25.67"
 
 [[deps.DocStringExtensions]]
 deps = ["LibGit2"]
@@ -415,9 +644,9 @@ version = "0.8.6"
 
 [[deps.DomainSets]]
 deps = ["CompositeTypes", "IntervalSets", "LinearAlgebra", "StaticArrays", "Statistics"]
-git-tree-sha1 = "ac425eea956013b51e7891bef3c33684b7d37029"
+git-tree-sha1 = "b909ae024533935c809fb946b7f26e7eef5d1106"
 uuid = "5b8099bc-c8ec-5219-889f-1d9e522a28bf"
-version = "0.5.11"
+version = "0.5.12"
 
 [[deps.Downloads]]
 deps = ["ArgTools", "FileWatching", "LibCURL", "NetworkOptions"]
@@ -482,6 +711,12 @@ git-tree-sha1 = "c6033cc3892d0ef5bb9cd29b7f2f0331ea5184ea"
 uuid = "f5851436-0d7a-5f13-b9de-f02708fd171a"
 version = "3.3.10+0"
 
+[[deps.FileIO]]
+deps = ["Pkg", "Requires", "UUIDs"]
+git-tree-sha1 = "94f5101b96d2d968ace56f7f2db19d0a5f592e28"
+uuid = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
+version = "1.15.0"
+
 [[deps.FilePathsBase]]
 deps = ["Compat", "Dates", "Mmap", "Printf", "Test", "UUIDs"]
 git-tree-sha1 = "129b104185df66e408edd6625d480b7f9e9823a0"
@@ -533,6 +768,17 @@ git-tree-sha1 = "aa31987c2ba8704e23c6c8ba8a4f769d5d7e4f91"
 uuid = "559328eb-81f9-559d-9380-de523a88c83c"
 version = "1.0.10+0"
 
+[[deps.FunctionWrappers]]
+git-tree-sha1 = "241552bc2209f0fa068b6415b1942cc0aa486bcc"
+uuid = "069b7b12-0de2-55c6-9aab-29f3d0a68a2e"
+version = "1.1.2"
+
+[[deps.FunctionWrappersWrappers]]
+deps = ["FunctionWrappers"]
+git-tree-sha1 = "2da4f223fbc4328b389bcce5f3e93dbe71678590"
+uuid = "77dc65aa-8811-40c2-897b-53d922fa7daf"
+version = "0.1.0"
+
 [[deps.Future]]
 deps = ["Random"]
 uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
@@ -545,21 +791,21 @@ version = "3.3.8+0"
 
 [[deps.GPUArraysCore]]
 deps = ["Adapt"]
-git-tree-sha1 = "d88b17a38322e153c519f5a9ed8d91e9baa03d8f"
+git-tree-sha1 = "6872f5ec8fd1a38880f027a26739d42dcda6691f"
 uuid = "46192b85-c4d5-4398-a991-12ede77f4527"
-version = "0.1.1"
+version = "0.1.2"
 
 [[deps.GR]]
 deps = ["Base64", "DelimitedFiles", "GR_jll", "HTTP", "JSON", "Libdl", "LinearAlgebra", "Pkg", "Printf", "Random", "RelocatableFolders", "Serialization", "Sockets", "Test", "UUIDs"]
-git-tree-sha1 = "037a1ca47e8a5989cc07d19729567bb71bfabd0c"
+git-tree-sha1 = "cf0a9940f250dc3cb6cc6c6821b4bf8a4286cf9c"
 uuid = "28b8d3ca-fb5f-59d9-8090-bfdbd6d07a71"
-version = "0.66.0"
+version = "0.66.2"
 
 [[deps.GR_jll]]
 deps = ["Artifacts", "Bzip2_jll", "Cairo_jll", "FFMPEG_jll", "Fontconfig_jll", "GLFW_jll", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Libtiff_jll", "Pixman_jll", "Pkg", "Qt5Base_jll", "Zlib_jll", "libpng_jll"]
-git-tree-sha1 = "c8ab731c9127cd931c93221f65d6a1008dad7256"
+git-tree-sha1 = "2d908286d120c584abbe7621756c341707096ba4"
 uuid = "d2c73de3-f751-5644-a686-071e5b155ba9"
-version = "0.66.0+0"
+version = "0.66.2+0"
 
 [[deps.GeoInterface]]
 deps = ["Extents"]
@@ -637,12 +883,6 @@ deps = ["Tricks"]
 git-tree-sha1 = "c47c5fa4c5308f27ccaac35504858d8914e102f9"
 uuid = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
 version = "0.9.4"
-
-[[deps.HypothesisTests]]
-deps = ["Combinatorics", "Distributions", "LinearAlgebra", "Random", "Rmath", "Roots", "Statistics", "StatsBase"]
-git-tree-sha1 = "10b23fc711999d34f6888ab6df4c510def193fd9"
-uuid = "09f84164-cd44-5f33-b23f-e6b0d136a0d5"
-version = "0.10.10"
 
 [[deps.IOCapture]]
 deps = ["Logging", "Random"]
@@ -929,6 +1169,12 @@ version = "1.0.2"
 [[deps.Mmap]]
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
+[[deps.Mocking]]
+deps = ["Compat", "ExprTools"]
+git-tree-sha1 = "29714d0a7a8083bba8427a4fbfb00a540c681ce7"
+uuid = "78c3b35d-d492-501b-9361-3d52fe80e533"
+version = "0.7.3"
+
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
 version = "2022.2.1"
@@ -1066,9 +1312,9 @@ version = "1.3.0"
 
 [[deps.Plots]]
 deps = ["Base64", "Contour", "Dates", "Downloads", "FFMPEG", "FixedPointNumbers", "GR", "GeometryBasics", "JSON", "LaTeXStrings", "Latexify", "LinearAlgebra", "Measures", "NaNMath", "Pkg", "PlotThemes", "PlotUtils", "Printf", "REPL", "Random", "RecipesBase", "RecipesPipeline", "Reexport", "Requires", "Scratch", "Showoff", "SparseArrays", "Statistics", "StatsBase", "UUIDs", "UnicodeFun", "Unzip"]
-git-tree-sha1 = "79830c17fe30f234931767238c584b3a75b3329d"
+git-tree-sha1 = "a19652399f43938413340b2068e11e55caa46b65"
 uuid = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
-version = "1.31.6"
+version = "1.31.7"
 
 [[deps.PlutoUI]]
 deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "Markdown", "Random", "Reexport", "UUIDs"]
@@ -1083,10 +1329,10 @@ uuid = "2dfb63ee-cc39-5dd5-95bd-886bf059d720"
 version = "1.4.2"
 
 [[deps.PreallocationTools]]
-deps = ["Adapt", "ArrayInterfaceCore", "ForwardDiff"]
-git-tree-sha1 = "50bf1eae0ace9a993ddfa78e83f9b76a898faf36"
+deps = ["Adapt", "ArrayInterfaceCore", "ForwardDiff", "ReverseDiff"]
+git-tree-sha1 = "5c076a409ec8d2a86d3685a7e4fed330cd489889"
 uuid = "d236fae5-4411-538c-8e31-a6e3d9e00b46"
-version = "0.4.1"
+version = "0.4.2"
 
 [[deps.Preferences]]
 deps = ["TOML"]
@@ -1122,11 +1368,17 @@ git-tree-sha1 = "78aadffb3efd2155af139781b8a8df1ef279ea39"
 uuid = "1fd47b50-473d-5c70-9696-f719f8f3bcdc"
 version = "2.4.2"
 
-[[deps.RCall]]
-deps = ["CategoricalArrays", "Conda", "DataFrames", "DataStructures", "Dates", "Libdl", "Missings", "REPL", "Random", "Requires", "StatsModels", "WinReg"]
-git-tree-sha1 = "72fddd643785ec1f36581cbc3d288529b96e99a7"
-uuid = "6f49c342-dc21-5d91-9882-a32aef131414"
-version = "0.13.13"
+[[deps.RData]]
+deps = ["CategoricalArrays", "CodecZlib", "DataFrames", "Dates", "FileIO", "Requires", "TimeZones", "Unicode"]
+git-tree-sha1 = "19e47a495dfb7240eb44dc6971d660f7e4244a72"
+uuid = "df47a6cb-8c03-5eed-afd8-b6050d6c41da"
+version = "0.8.3"
+
+[[deps.RDatasets]]
+deps = ["CSV", "CodecZlib", "DataFrames", "FileIO", "Printf", "RData", "Reexport"]
+git-tree-sha1 = "2720e6f6afb3e562ccb70a6b62f8f308ff810333"
+uuid = "ce6b1742-4840-55fa-b093-852dadbb1d8b"
+version = "0.7.7"
 
 [[deps.REPL]]
 deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
@@ -1160,10 +1412,10 @@ uuid = "01d81517-befc-4cb6-b9ec-a95719d0359c"
 version = "0.6.3"
 
 [[deps.RecursiveArrayTools]]
-deps = ["Adapt", "ArrayInterfaceCore", "ArrayInterfaceStaticArraysCore", "ChainRulesCore", "DocStringExtensions", "FillArrays", "GPUArraysCore", "LinearAlgebra", "RecipesBase", "StaticArraysCore", "Statistics", "ZygoteRules"]
-git-tree-sha1 = "4ce7584604489e537b2ab84ed92b4107d03377f0"
+deps = ["Adapt", "ArrayInterfaceCore", "ArrayInterfaceStaticArraysCore", "ChainRulesCore", "DocStringExtensions", "FillArrays", "GPUArraysCore", "IteratorInterfaceExtensions", "LinearAlgebra", "RecipesBase", "StaticArraysCore", "Statistics", "Tables", "ZygoteRules"]
+git-tree-sha1 = "3004608dc42101a944e44c1c68b599fa7c669080"
 uuid = "731186ca-8d62-57ce-b412-fbd966d074cd"
-version = "2.31.2"
+version = "2.32.0"
 
 [[deps.Reexport]]
 git-tree-sha1 = "45e428421666073eab6f2da5c9d310d99bb12f9b"
@@ -1188,6 +1440,12 @@ git-tree-sha1 = "838a3a4188e2ded87a4f9f184b4b0d78a1e91cb7"
 uuid = "ae029012-a4dd-5104-9daa-d747884805df"
 version = "1.3.0"
 
+[[deps.ReverseDiff]]
+deps = ["ChainRulesCore", "DiffResults", "DiffRules", "ForwardDiff", "FunctionWrappers", "LinearAlgebra", "LogExpFunctions", "MacroTools", "NaNMath", "Random", "SpecialFunctions", "StaticArrays", "Statistics"]
+git-tree-sha1 = "b8e2eb3d8e1530acb73d8949eab3cedb1d43f840"
+uuid = "37e2e3b7-166d-5795-8a7a-e32c996b4267"
+version = "1.14.1"
+
 [[deps.Rmath]]
 deps = ["Random", "Rmath_jll"]
 git-tree-sha1 = "bf3188feca147ce108c76ad82c2792c57abe7b1f"
@@ -1200,12 +1458,6 @@ git-tree-sha1 = "68db32dff12bb6127bac73c209881191bf0efbb7"
 uuid = "f50d1b31-88e8-58de-be2c-1cc44531875f"
 version = "0.3.0+0"
 
-[[deps.Roots]]
-deps = ["CommonSolve", "Printf", "Setfield"]
-git-tree-sha1 = "50f945fb7d7fdece03bbc76ff1ab96170f64a892"
-uuid = "f2b01f46-fcfa-551c-844a-d8ac1e96c665"
-version = "2.0.2"
-
 [[deps.RuntimeGeneratedFunctions]]
 deps = ["ExprTools", "SHA", "Serialization"]
 git-tree-sha1 = "cdc1e4278e91a6ad530770ebb327f9ed83cf10c4"
@@ -1217,10 +1469,10 @@ uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 version = "0.7.0"
 
 [[deps.SciMLBase]]
-deps = ["ArrayInterfaceCore", "CommonSolve", "ConstructionBase", "Distributed", "DocStringExtensions", "IteratorInterfaceExtensions", "LinearAlgebra", "Logging", "Markdown", "RecipesBase", "RecursiveArrayTools", "StaticArraysCore", "Statistics", "Tables"]
-git-tree-sha1 = "3077587613bd4ba73e2acd4df2d1300ef19d8513"
+deps = ["ArrayInterfaceCore", "CommonSolve", "ConstructionBase", "Distributed", "DocStringExtensions", "FunctionWrappersWrappers", "IteratorInterfaceExtensions", "LinearAlgebra", "Logging", "Markdown", "RecipesBase", "RecursiveArrayTools", "StaticArraysCore", "Statistics", "Tables"]
+git-tree-sha1 = "a89549e23a716bc17d2fdd2029a7c6d36de4d9c8"
 uuid = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
-version = "1.47.0"
+version = "1.50.0"
 
 [[deps.Scratch]]
 deps = ["Dates"]
@@ -1246,11 +1498,6 @@ version = "0.8.2"
 [[deps.SharedArrays]]
 deps = ["Distributed", "Mmap", "Random", "Serialization"]
 uuid = "1a1011a3-84de-559e-8e89-a11a2f7dc383"
-
-[[deps.ShiftedArrays]]
-git-tree-sha1 = "22395afdcf37d6709a5a0766cc4a5ca52cb85ea0"
-uuid = "1277b4bf-5013-50f5-be3d-901d8477a67a"
-version = "1.0.0"
 
 [[deps.Showoff]]
 deps = ["Dates", "Grisu"]
@@ -1296,14 +1543,14 @@ version = "0.7.6"
 
 [[deps.StaticArrays]]
 deps = ["LinearAlgebra", "Random", "StaticArraysCore", "Statistics"]
-git-tree-sha1 = "23368a3313d12a2326ad0035f0db0c0966f438ef"
+git-tree-sha1 = "85bc4b051546db130aeb1e8a696f1da6d4497200"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.5.2"
+version = "1.5.5"
 
 [[deps.StaticArraysCore]]
-git-tree-sha1 = "66fe9eb253f910fe8cf161953880cfdaef01cdf0"
+git-tree-sha1 = "5b413a57dd3cea38497d745ce088ac8592fbb5be"
 uuid = "1e83bf80-4336-4d27-bf5d-d5a4f845583c"
-version = "1.0.1"
+version = "1.1.0"
 
 [[deps.Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]
@@ -1327,12 +1574,6 @@ git-tree-sha1 = "5783b877201a82fc0014cbf381e7e6eb130473a4"
 uuid = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
 version = "1.0.1"
 
-[[deps.StatsModels]]
-deps = ["DataAPI", "DataStructures", "LinearAlgebra", "Printf", "REPL", "ShiftedArrays", "SparseArrays", "StatsBase", "StatsFuns", "Tables"]
-git-tree-sha1 = "f8ba54b202c77622a713e25e7616d618308b34d3"
-uuid = "3eaba693-59b7-5ba5-a881-562e759f1c8d"
-version = "0.6.31"
-
 [[deps.StatsPlots]]
 deps = ["AbstractFFTs", "Clustering", "DataStructures", "DataValues", "Distributions", "Interpolations", "KernelDensity", "LinearAlgebra", "MultivariateStats", "Observables", "Plots", "RecipesBase", "RecipesPipeline", "Reexport", "StatsBase", "TableOperations", "Tables", "Widgets"]
 git-tree-sha1 = "2b35ba790f1f823872dcf378a6d3c3b520092eac"
@@ -1340,10 +1581,10 @@ uuid = "f3b207a7-027a-5e70-b257-86293d7955fd"
 version = "0.15.1"
 
 [[deps.StructArrays]]
-deps = ["Adapt", "DataAPI", "StaticArrays", "Tables"]
-git-tree-sha1 = "ec47fb6069c57f1cee2f67541bf8f23415146de7"
+deps = ["Adapt", "DataAPI", "StaticArraysCore", "Tables"]
+git-tree-sha1 = "8c6ac65ec9ab781af05b08ff305ddc727c25f680"
 uuid = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
-version = "0.6.11"
+version = "0.6.12"
 
 [[deps.SuiteSparse]]
 deps = ["Libdl", "LinearAlgebra", "Serialization", "SparseArrays"]
@@ -1410,17 +1651,23 @@ git-tree-sha1 = "d223de97c948636a4f34d1f84d92fd7602dc555b"
 uuid = "ac1d9e8a-700a-412c-b207-f0111f4b6c0d"
 version = "0.1.10"
 
+[[deps.TimeZones]]
+deps = ["Dates", "Downloads", "InlineStrings", "LazyArtifacts", "Mocking", "Printf", "RecipesBase", "Scratch", "Unicode"]
+git-tree-sha1 = "d634a3641062c040fc8a7e2a3ea17661cc159688"
+uuid = "f269a46b-ccf7-5d73-abea-4c690281aa53"
+version = "1.9.0"
+
 [[deps.TimerOutputs]]
 deps = ["ExprTools", "Printf"]
-git-tree-sha1 = "464d64b2510a25e6efe410e7edab14fffdc333df"
+git-tree-sha1 = "9dfcb767e17b0849d6aaf85997c98a5aea292513"
 uuid = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
-version = "0.5.20"
+version = "0.5.21"
 
 [[deps.TranscodingStreams]]
 deps = ["Random", "Test"]
-git-tree-sha1 = "216b95ea110b5972db65aa90f88d8d89dcb8851c"
+git-tree-sha1 = "4ad90ab2bbfdddcae329cba59dab4a8cdfac3832"
 uuid = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
-version = "0.9.6"
+version = "0.9.7"
 
 [[deps.Transducers]]
 deps = ["Adapt", "ArgCheck", "BangBang", "Baselet", "CompositionsBase", "DefineSingletons", "Distributed", "InitialValues", "Logging", "Markdown", "MicroCollections", "Requires", "Setfield", "SplittablesBase", "Tables"]
@@ -1467,11 +1714,6 @@ git-tree-sha1 = "34db80951901073501137bdbc3d5a8e7bbd06670"
 uuid = "41fe7b60-77ed-43a1-b4f0-825fd5a5650d"
 version = "0.1.2"
 
-[[deps.VersionParsing]]
-git-tree-sha1 = "58d6e80b4ee071f5efd07fda82cb9fbe17200868"
-uuid = "81def892-9a0e-5fdd-b105-ffc91e053289"
-version = "1.3.0"
-
 [[deps.Wayland_jll]]
 deps = ["Artifacts", "Expat_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg", "XML2_jll"]
 git-tree-sha1 = "3e61f0b86f90dacb0bc0e73a0c5a83f6a8636e23"
@@ -1495,12 +1737,6 @@ deps = ["Colors", "Dates", "Observables", "OrderedCollections"]
 git-tree-sha1 = "fcdae142c1cfc7d89de2d11e08721d0f2f86c98a"
 uuid = "cc8bc4a8-27d6-5769-a93b-9d913e69aa62"
 version = "0.6.6"
-
-[[deps.WinReg]]
-deps = ["Test"]
-git-tree-sha1 = "808380e0a0483e134081cc54150be4177959b5f4"
-uuid = "1b915085-20d7-51cf-bf83-8f477d6f5128"
-version = "0.3.1"
 
 [[deps.WoodburyMatrices]]
 deps = ["LinearAlgebra", "SparseArrays"]
@@ -1728,10 +1964,38 @@ version = "1.4.1+0"
 """
 
 # ╔═╡ Cell order:
-# ╠═c9a45914-1acf-11ed-09d9-83e0c55163bb
-# ╠═8cb71019-31f0-463c-a268-4e2cfeb913ba
-# ╠═0bb41459-6e12-4cf1-bfda-99950c713c2d
-# ╠═92d67ca7-f02e-4e77-8a4c-9fe209b352b1
-# ╠═74a9fc93-88b5-4348-8959-2b3508755e29
+# ╠═78dc0306-22c7-11ed-1327-cdd85d272d50
+# ╠═c35042b4-0e86-4f4a-8879-471fc0e6ea94
+# ╠═733c9de7-f017-41bf-9ccf-96e6942a5f51
+# ╠═a70b59e2-5467-4413-83c6-233526303da7
+# ╠═8e8040d8-283b-41f0-8ab5-67b0bba7193f
+# ╠═c402515c-96eb-46db-8d80-bb05b1f1b520
+# ╠═7033c5b9-0052-43bc-9c29-071907f3c275
+# ╠═f43380fd-4f0b-42a3-b950-0dd29bd33a24
+# ╠═54ec07f9-2dcf-4deb-b10a-8978268fedbf
+# ╠═d2164bb6-338e-499f-8b08-83d685298038
+# ╠═9e164acc-1a7c-4b01-a643-04fc4e952f26
+# ╠═a5670b20-1a99-4e7b-8e77-23a3b4b96a15
+# ╠═c8ff4bb6-89d1-4fdc-8649-245a256f7691
+# ╠═f6e45fb7-ac4e-4f26-8ec9-45e9d2f96d86
+# ╠═b950336e-d37d-4c12-9bb8-baba419531db
+# ╠═091d7304-fefe-4caa-b42f-39c86537b1c1
+# ╠═de27541c-dde2-4dbe-a75c-c6987f100ba6
+# ╠═0b56d807-1966-4ad2-937a-5a665b1b9563
+# ╠═b0b0f68f-29c1-438d-8ed2-968b2f9df864
+# ╠═ff6ba76d-7fee-461f-83b9-0eb3b7b8bb1e
+# ╠═b802b7d4-c954-4273-bfb9-7483b939f068
+# ╠═a88c8115-0ffa-4ce1-a502-b99e8d7391e5
+# ╟─996e99f8-d8db-491d-814b-0146972df0d6
+# ╠═f7459ca6-89ec-4bcf-8bc9-70ef14de18ae
+# ╠═5f53191e-079f-41b3-9e27-4c2179466ed4
+# ╠═c59d4752-f5de-4dbe-b0a8-2bf16c3f3c97
+# ╠═1002cc1d-ecea-4c47-ae3c-39bd3f10c4a5
+# ╟─b0b8f358-bea8-4170-92c3-8ee9428e0cdb
+# ╠═7d9d33b6-0c58-429f-9028-79f1106ab264
+# ╠═e821dd18-b7bf-4268-a80b-485be4471c93
+# ╠═7d50ab5c-06ec-4efd-bc52-6755d7c63df6
+# ╠═db1acb8e-3ed9-44f2-bd12-1dbe351a5d30
+# ╠═ed845bf1-eea3-4b1b-b912-42f872ea8ac6
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

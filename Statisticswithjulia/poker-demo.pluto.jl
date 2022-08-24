@@ -4,55 +4,52 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ f5b0ea46-1ae2-11ed-0eb2-4776764de497
+# ╔═╡ 58862d90-1df2-11ed-2a98-677d0aaad7c0
 begin
-	using Images,FileIO,ImageMagick,ImageIO,HTTP,Random,StatsBase
+	using Images, FileIO,HTTP
 end
 
-# ╔═╡ 9d7c64f4-4a23-49c4-a5c8-b6271fffdcb0
+# ╔═╡ d90fc7fd-7bb6-420b-8ed5-b7908e35ea6f
 begin
-	url="https://tva1.sinaimg.cn/large/e6c9d24egy1h558e7zd4sj20go0gogn9.jpg"
-	img_data=download(url)
-    pic=load(img_data)
-	pic_size=size(pic)
-    pic_height,pic_width=pic_size
-    co=copy(pic)
-end
 
-# ╔═╡ 07a78a3b-47d7-4884-be11-08bf434ca0c7
-begin
-    ran=1:4:600
+	function sprite(img,row=2,col=2)
+		 arr=[]
+	      height,width=size(img)
+		  w,h=width÷col,height÷row
+			for r in 0:row-1
+				for c in 0: col-1
+				    a= r==0 ? 1 : r*h
+					b= c==0 ? 1 : c*w
+					push!(arr,img[a:(r+1)*h,b:(c+1)*w])
+				end
+			end
+	   return arr
+	end
 	
-	co[ran, ran]
+	
 end
 
-# ╔═╡ b5c60ccf-fe19-4864-9b96-ca5d79dfc476
+# ╔═╡ 0a9e7fc9-60d1-4354-a01f-46ea05e36385
 begin
-	x=y=sample(1:600,500,ordered=true)
-	co[x,y]
-end
+	poker= load(download("https://tva1.sinaimg.cn/large/e6c9d24egy1h59q7q11v9j21540ingq2.jpg"))
 
-# ╔═╡ bc74ce02-e134-4daa-bd89-c6ff10b1618a
-(pic_width)^2/(length(ran))^2
+	card=sprite(poker,2,7)
+
+	
+	
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-ImageIO = "82e4d734-157c-48bb-816b-45c225c6df19"
-ImageMagick = "6218d12a-5da1-5696-b52f-db25d2ecc6d1"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
-Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
-StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 
 [compat]
 FileIO = "~1.15.0"
 HTTP = "~1.2.1"
-ImageIO = "~0.6.6"
-ImageMagick = "~1.2.1"
 Images = "~0.25.2"
-StatsBase = "~0.33.21"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -61,7 +58,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.8.0-rc3"
 manifest_format = "2.0"
-project_hash = "d4aaa7e578e3fabaf8aaed2151e847b399ecb517"
+project_hash = "b4e600effe80ea468fef9093c3b49baf2283cb40"
 
 [[deps.AbstractFFTs]]
 deps = ["ChainRulesCore", "LinearAlgebra"]
@@ -813,14 +810,14 @@ version = "0.1.1"
 
 [[deps.StaticArrays]]
 deps = ["LinearAlgebra", "Random", "StaticArraysCore", "Statistics"]
-git-tree-sha1 = "23368a3313d12a2326ad0035f0db0c0966f438ef"
+git-tree-sha1 = "2d4e51cfad63d2d34acde558027acbc66700349b"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.5.2"
+version = "1.5.3"
 
 [[deps.StaticArraysCore]]
-git-tree-sha1 = "66fe9eb253f910fe8cf161953880cfdaef01cdf0"
+git-tree-sha1 = "5b413a57dd3cea38497d745ce088ac8592fbb5be"
 uuid = "1e83bf80-4336-4d27-bf5d-d5a4f845583c"
-version = "1.0.1"
+version = "1.1.0"
 
 [[deps.Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]
@@ -939,10 +936,8 @@ version = "17.4.0+0"
 """
 
 # ╔═╡ Cell order:
-# ╠═f5b0ea46-1ae2-11ed-0eb2-4776764de497
-# ╠═9d7c64f4-4a23-49c4-a5c8-b6271fffdcb0
-# ╠═07a78a3b-47d7-4884-be11-08bf434ca0c7
-# ╠═b5c60ccf-fe19-4864-9b96-ca5d79dfc476
-# ╠═bc74ce02-e134-4daa-bd89-c6ff10b1618a
+# ╠═58862d90-1df2-11ed-2a98-677d0aaad7c0
+# ╠═0a9e7fc9-60d1-4354-a01f-46ea05e36385
+# ╠═d90fc7fd-7bb6-420b-8ed5-b7908e35ea6f
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
