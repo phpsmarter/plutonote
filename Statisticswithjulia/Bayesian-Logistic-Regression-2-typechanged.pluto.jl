@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.17.5
+# v0.19.9
 
 using Markdown
 using InteractiveUtils
@@ -11,20 +11,34 @@ begin
 	using StatsFuns: logistic
 	Turing.setprogress!(false);
 	diabetes_url1="/Users/lunarcheung/Public/github/StatsWithJuliaBook/data/diabetes.csv"
-	diabetes_url2="/Users/lunarcheung/Downloads/coding/datasets-master/PimaIndiansDiabetes.csv"
+
 	Random.seed!(0)
 end
 
 # ╔═╡ 0b9d4178-ec66-41eb-94e3-64fd2e68f283
 md"""
 # 贝叶斯逻辑斯蒂方法预测是否得糖尿病
+
+逻辑斯蒂的函数将实数值映射为 0和 1, 用于逻辑判断. 类似的例子有根据个人信息预测是否有贷款逾期行为. 
+或者是根据信息判断是否患病等等. 
+
+本例中七个变量以及截距的先验分布都是正态分布
+
+方法 2 使用 CSV的方法修改数据类型,Int64不支持, 修改为 Float64
 """
 
-# ╔═╡ 019b50c8-f0c3-470d-9ce5-89aaeadd7241
-data=CSV.read(diabetes_url2,DataFrame)
+# ╔═╡ ce4e4236-0a18-496f-a304-bcd5f6fa589b
+types=Dict("Pregnancies"=>Float64,
+"Glucose"=>Float64,
+"BloodPressure"=>Float64,
+"SkinThickness"=>Float64,
+"Insulin"=>Float64,
+"BMI"=>Float64,
+"DiabetesPedigreeFunction"=>Float64,
+"Age"=>Float64)
 
-# ╔═╡ f3d34ac9-a01c-4081-9a72-2a9f95c719e2
-names(data)
+# ╔═╡ 82a10dfe-e2a1-4fba-9a55-3545b6874160
+data=CSV.File(diabetes_url1,types=types)|>DataFrame  #使用 types 对类型进行转换, 参见 CSV.jl 文档
 
 # ╔═╡ 8d5daada-9561-4418-b5e4-6fdb91dceddf
 begin
@@ -33,12 +47,12 @@ begin
     return trainset, testset = stratifiedobs(row -> row[target], shuffled; p=at)
 end
 
-features = names(data)
-numerics =["V$i" for i in 3:6]
-target = :Class
+name= names(data)
+features=name[1:8]
+target = :Outcome
 
 trainset, testset = split_data(data, target; at=0.05)
-for feature in numerics
+for feature in features[1:7]
     μ, σ = rescale!(trainset[!, feature]; obsdim=1)
     rescale!(testset[!, feature], μ, σ; obsdim=1)
 end
@@ -50,19 +64,29 @@ train_label = trainset[:, target]
 test_label = testset[:, target];
 end
 
+# ╔═╡ 22e5d1cc-372e-43b7-b090-bd5b8f504bb5
+md"""
+由于第八个特征年龄拟合效果不好, 年龄特征会让所有的 rhat 变得非常大,所以没有加入分布
+"""
+
 # ╔═╡ bcfb1295-3b5c-4757-acfc-ce9b12568ae8
 begin
 	# Bayesian logistic regression (LR)
 @model function logistic_regression(x, y, n, σ)
+	
     intercept ~ Normal(0, σ)
-
-    V3 ~ Normal(0, σ)
-    V4 ~ Normal(0, σ)
-	V5 ~ Normal(0, σ)
-	V6 ~ Normal(0, σ)
+	
+	Pregnancies ~ Normal(0, σ)
+	Glucose ~ Normal(0, σ)
+    BloodPressure ~ Normal(0, σ)
+	SkinThickness ~ Normal(0, σ)
+	Insulin ~ Normal(0, σ)
+	BMI ~ Normal(0, σ)
+	DiabetesPedigreeFunction ~ Normal(0, σ)
+	
 
     for i in 1:n
-        v = logistic(intercept + V3 * x[i, 1] +  V4 * x[i, 2] +V5 * x[i, 3]+V6 * x[i, 4])
+        v = logistic(intercept+Pregnancies * x[i, 1]+Glucose * x[i, 2] + BloodPressure * x[i, 3]+SkinThickness * x[i, 4]+Insulin * x[i, 5]+BMI * x[i, 6]+DiabetesPedigreeFunction * x[i, 7])
         y[i] ~ Bernoulli(v)
     end
 end;
@@ -87,10 +111,14 @@ plot(chain)
 function prediction(x::Matrix, chain, threshold)
     # Pull the means from each parameter's sampled values in the chain.
     intercept = mean(chain[:intercept])
-    v3 = mean(chain[:V3])
-    v4 = mean(chain[:V4])
-	v5 = mean(chain[:V5])
-	v6 = mean(chain[:V6])
+	
+	v1 = mean(chain["Pregnancies"])
+	v2 = mean(chain["Glucose"])
+    v3 = mean(chain["BloodPressure"])
+    v4 = mean(chain["SkinThickness"])
+	v5 = mean(chain["Insulin"])
+	v6 = mean(chain["BMI"])
+	v7 = mean(chain["DiabetesPedigreeFunction"])
 
     # Retrieve the number of rows.
     n, _ = size(x)
@@ -101,7 +129,7 @@ function prediction(x::Matrix, chain, threshold)
     # Calculate the logistic function for each element in the test set.
     for i in 1:n
         num = logistic(
-            intercept .+ v3 * x[i, 1] +v4 * x[i, 2] + v5 * x[i, 3]+v6 * x[i, 4]
+            intercept+v1 * x[i, 1] +v2 * x[i, 2] + v3 * x[i, 3] +v4 * x[i, 4] + v5 * x[i, 5]+v6 * x[i, 6]+v7* x[i, 7]
         )
         if num >= threshold
             v[i] = 1
@@ -126,19 +154,18 @@ end
 
 # ╔═╡ 502df579-bd3c-4351-a9a0-945f66916baa
 begin
-	defaults = sum(test_label)
-not_defaults = length(test_label) - defaults
+has_diabete = sum(test_label)
+not_diabete = length(test_label) - has_diabete
 
-predicted_defaults = sum(test_label .== predictions .== 1)
-predicted_not_defaults = sum(test_label .== predictions .== 0)
+predicted_diabete = sum(test_label .== predictions .== 1)
+predicted_not_diabete = sum(test_label .== predictions .== 0)
 
-println("Defaults: $defaults
-    Predictions: $predicted_defaults
-    Percentage defaults correct $(predicted_defaults/defaults)")
-
-println("Not defaults: $not_defaults
-    Predictions: $predicted_not_defaults
-    Percentage non-defaults correct $(predicted_not_defaults/not_defaults)")
+println("Has diabete: $has_diabete
+    Predictions: $predicted_diabete
+    Percentage has_diabete correct $(predicted_diabete/has_diabete)")
+println("Not diabete: $not_diabete
+    Predictions: $predicted_not_diabete
+    Percentage not_diabete correct $(predicted_not_diabete/not_diabete)")
 end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -171,8 +198,9 @@ Turing = "~0.21.12"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.7.1"
+julia_version = "1.8.0-rc3"
 manifest_format = "2.0"
+project_hash = "9f4c1d30357a3cad55f646b29e3f14693cf53355"
 
 [[deps.AbstractFFTs]]
 deps = ["ChainRulesCore", "LinearAlgebra"]
@@ -234,6 +262,7 @@ version = "2.3.0"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
+version = "1.1.1"
 
 [[deps.Arpack]]
 deps = ["Arpack_jll", "Libdl", "LinearAlgebra", "Logging"]
@@ -397,6 +426,7 @@ version = "3.46.0"
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
+version = "0.5.2+0"
 
 [[deps.CompositionsBase]]
 git-tree-sha1 = "455419f7e328a1a2493cabc6428d79e951349769"
@@ -513,8 +543,9 @@ uuid = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
 version = "0.8.6"
 
 [[deps.Downloads]]
-deps = ["ArgTools", "LibCURL", "NetworkOptions"]
+deps = ["ArgTools", "FileWatching", "LibCURL", "NetworkOptions"]
 uuid = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
+version = "1.6.0"
 
 [[deps.DualNumbers]]
 deps = ["Calculus", "NaNMath", "SpecialFunctions"]
@@ -580,6 +611,9 @@ deps = ["Compat", "Dates", "Mmap", "Printf", "Test", "UUIDs"]
 git-tree-sha1 = "316daa94fad0b7a008ebd573e002efd6609d85ac"
 uuid = "48062228-2e41-5def-b9a4-89aafe57970f"
 version = "0.9.19"
+
+[[deps.FileWatching]]
+uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
 
 [[deps.FillArrays]]
 deps = ["LinearAlgebra", "Random", "SparseArrays", "Statistics"]
@@ -868,10 +902,12 @@ version = "0.1.3"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
+version = "0.6.3"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
+version = "7.83.1+1"
 
 [[deps.LibGit2]]
 deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
@@ -880,6 +916,7 @@ uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
+version = "1.10.2+0"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1029,6 +1066,7 @@ version = "1.1.5"
 [[deps.MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "c8ffd9c3-330d-5841-b78e-0817d7145fa1"
+version = "2.28.0+0"
 
 [[deps.Measures]]
 git-tree-sha1 = "e498ddeee6f9fdb4551ce855a46f54dbd900245f"
@@ -1052,6 +1090,7 @@ uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
+version = "2022.2.1"
 
 [[deps.MultivariateStats]]
 deps = ["Arpack", "LinearAlgebra", "SparseArrays", "Statistics", "StatsAPI", "StatsBase"]
@@ -1090,6 +1129,7 @@ version = "0.4.11"
 
 [[deps.NetworkOptions]]
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
+version = "1.2.0"
 
 [[deps.Observables]]
 git-tree-sha1 = "dfd8d34871bc3ad08cd16026c1828e271d554db9"
@@ -1111,10 +1151,12 @@ version = "1.3.5+1"
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
+version = "0.3.20+0"
 
 [[deps.OpenLibm_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "05823500-19ac-5b8b-9628-191a04bc5112"
+version = "0.8.1+0"
 
 [[deps.OpenSSL_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1172,6 +1214,7 @@ version = "0.40.1+0"
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
+version = "1.8.0"
 
 [[deps.PlotThemes]]
 deps = ["PlotUtils", "Statistics"]
@@ -1316,6 +1359,7 @@ version = "2.0.2"
 
 [[deps.SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
+version = "0.7.0"
 
 [[deps.SciMLBase]]
 deps = ["ArrayInterfaceCore", "CommonSolve", "ConstructionBase", "Distributed", "DocStringExtensions", "FunctionWrappersWrappers", "IteratorInterfaceExtensions", "LinearAlgebra", "Logging", "Markdown", "RecipesBase", "RecursiveArrayTools", "StaticArraysCore", "Statistics", "Tables"]
@@ -1447,6 +1491,7 @@ uuid = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
 [[deps.TOML]]
 deps = ["Dates"]
 uuid = "fa267f1f-6049-4f14-aa54-33bafae1ed76"
+version = "1.0.0"
 
 [[deps.TableOperations]]
 deps = ["SentinelArrays", "Tables", "Test"]
@@ -1469,6 +1514,7 @@ version = "1.7.0"
 [[deps.Tar]]
 deps = ["ArgTools", "SHA"]
 uuid = "a4e569a6-e804-4fa4-b0f3-eef7a1d5b13e"
+version = "1.10.0"
 
 [[deps.TensorCore]]
 deps = ["LinearAlgebra"]
@@ -1709,6 +1755,7 @@ version = "1.4.0+3"
 [[deps.Zlib_jll]]
 deps = ["Libdl"]
 uuid = "83775a58-1f1d-513f-b197-d71354ab007a"
+version = "1.2.12+3"
 
 [[deps.Zstd_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1737,6 +1784,7 @@ version = "0.15.1+0"
 [[deps.libblastrampoline_jll]]
 deps = ["Artifacts", "Libdl", "OpenBLAS_jll"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
+version = "5.1.1+0"
 
 [[deps.libfdk_aac_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1759,10 +1807,12 @@ version = "1.3.7+1"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
+version = "1.47.0+0"
 
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
+version = "17.4.0+0"
 
 [[deps.x264_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1786,9 +1836,10 @@ version = "1.4.1+0"
 # ╔═╡ Cell order:
 # ╠═0b9d4178-ec66-41eb-94e3-64fd2e68f283
 # ╠═69818752-290a-11ed-3d6c-172c398cb365
-# ╠═019b50c8-f0c3-470d-9ce5-89aaeadd7241
-# ╠═f3d34ac9-a01c-4081-9a72-2a9f95c719e2
+# ╠═ce4e4236-0a18-496f-a304-bcd5f6fa589b
+# ╠═82a10dfe-e2a1-4fba-9a55-3545b6874160
 # ╠═8d5daada-9561-4418-b5e4-6fdb91dceddf
+# ╠═22e5d1cc-372e-43b7-b090-bd5b8f504bb5
 # ╠═bcfb1295-3b5c-4757-acfc-ce9b12568ae8
 # ╠═7ccd22c5-e954-4798-90e2-61b7152bffb2
 # ╠═45590065-c6b0-41b5-9b5e-c088432bde0a
